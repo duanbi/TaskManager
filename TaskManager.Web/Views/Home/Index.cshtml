@@ -1,0 +1,236 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+<style>
+    .stop {
+        background-color:#ff6633;
+    }
+    .run {
+        background-color:#33cc33;
+    }
+    .delete {
+        background-color:#FF4500;
+    }
+
+</style>
+<br />
+<table style="width:100%;">
+    <tr>
+        <td>
+            <span style="padding-left:200px;">注：</span><a href="@Url.Action("cronExpression", "Home")" target="_blank"><span>Cron值參考</span></a>
+            <div class="menu_button" style="float:right;margin-right: 22px;">
+                <input type="button" class="k-button" value="新增" />
+                <input type="button" class="k-button" value="全部暂停" />
+                <input type="button" class="k-button" value="全部运行" />
+            </div>
+            
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div id="schedule-tasks-grid"></div>
+
+            <script>
+                $(document).ready(function () {
+                    $("#schedule-tasks-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                read: {
+                                    url: "@Html.Raw(Url.Action("GetScheduleJobList", "Home"))",
+                                    type: "POST",
+                                    dataType: "json"
+                                },
+                                update: {
+                                    url:"@Html.Raw(Url.Action("UpdateCronExpression", "Home"))",
+                                    type: "POST",
+                                    dataType: "json"
+                                }
+                            },
+                            schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id",
+                                    fields: {
+                                        JobName: { editable: true, type: "string" },
+                                        JobKey: { editable: false, type: "string" },
+                                        CronExpression: { editable: true, type: "string" },
+                                        CreateTimeString: { editable: false, type: "string" },
+                                        LastExecuteTimeString: { editable: false, type: "string" },
+                                        NextExecuteTimeString: { editable: false, type: "string" },
+                                        JobStatus: { editable: false, type: "string" },
+                                        Id: { editable: false, type: "number" },
+                                    }
+                                }
+
+                            },
+                            error: function (e) {
+                                display_kendoui_grid_error(e);
+                                // Cancel the changes
+                                this.cancelChanges();
+                            },
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            numeric: false,
+                            previousNext: false,
+                            info: false
+                        },
+                        editable: {
+                            confirmation: false,
+                            mode: "inline"
+                        },
+                        scrollable: false,
+                        columns: [{
+                            field: "JobName",
+                            title: "任务名称",
+                            width: 120
+                        }, {
+                            field: "JobKey",
+                            title: "任务唯一键",
+                            width: 100
+                        }, {
+                            field: "CronExpression",
+                            title: "Cron值",
+                            width: 50,
+                            template: function (a) {
+                                var html = '<span>' + a.CronExpression + ' </span>';
+                                return html;
+                            }
+                        },  {
+                            field: "CreateTimeString",
+                            title: "创建日期",
+                            width: 100,
+                        }, {
+                            field: "LastExecuteTimeString",
+                            title: "最后执行时间",
+                            width: 100
+                        }, {
+                            field: "NextExecuteTimeString",
+                            title: "下次执行时间",
+                            width: 100
+                        }, {
+                            field: "JobStatus",
+                            title: "状态",
+                            width: 50,
+                            template: function (a) {
+                                var html = '';
+                                if (a.JobStatus == 1) {
+                                    return '运行中';
+                                }
+                                else {
+                                    return '已暂停';
+                                }
+                            }
+                        }, {
+                            field: "Id",
+                            title: "操作",
+                            width: 100,
+                            template: function (a) {
+                                var jobkey = "'" + a.JobKey + "'";
+                                var cronExpression = "'" + a.CronExpression + "'";
+                                var html = '';
+                                if (a.JobStatus == 1) {
+                                    html += '<input type="button" class="k-button stop" value="停止" onclick="stopJob(' + jobkey + ');"/>';
+                                }
+                                else  {
+                                    html += '<input type="button" class="k-button run" value="运行" onclick="runJob(' + jobkey + ');"/>';
+                                }
+                                //html += '<input type="button" class="k-button delete" value="删除" onclick="deleteJob(' + jobkey + ');"/>';
+                                return html;
+                            }
+
+                        }, {
+                            command: { name: "edit", text: "编辑" },
+                            title: "编辑",
+                            width: 50
+                        }]
+                    });
+                });
+            </script>
+        </td>
+    </tr>
+</table>
+
+
+<div class="Edit_CronExpression">
+
+
+
+</div>
+
+<script>
+    function stopAll()
+    {
+
+    }
+
+    function runJob(jobKey) {
+        $.ajax({
+            type: 'GET',
+            url: '/Home/RunJob?jobKey=' + jobKey,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                if (data.status) {
+                    alert("重启成功");
+                    window.location.reload();
+                    var grid = $("#schedule-tasks-grid").data("kendoGrid");
+                    grid.refresh();
+                }
+                else {
+                    alert("重启失败");
+                }
+            }
+        });
+    }
+
+    function stopJob(jobKey) {
+        $.ajax({
+            type: 'Get',
+            url: '/Home/StopJob?jobKey=' + jobKey,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                if (data.status) {
+                    alert("暂停成功");
+                    var grid = $("#schedule-tasks-grid").data("kendoGrid");
+                    grid.refresh();
+                }
+                else {
+                    alert("暂停失败");
+                }
+            }
+        });
+    }
+
+    function deleteJob(jobKey)
+    {
+        $.ajax({
+            type: 'Get',
+            url: '/Home/PauseJob?jobKey=' + jobKey,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                if (data.status) {
+                    alert("暂停成功");
+                    var grid = $("#schedule-tasks-grid").data("kendoGrid");
+                    grid.refresh();
+                }
+                else {
+                    alert("暂停失败");
+                }
+            }
+        });
+    }
+
+</script>

@@ -1,0 +1,111 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+
+
+<style type="text/css">
+    .bg {
+        background: red;
+    }
+</style>
+
+@model TaskManager.Entity.ScheduleJobListModel
+<div id="schedulejob_list">
+
+    <table border="1" style="width:100%" >
+        <caption><h3>作业调度列表</h3></caption>
+        <tr>
+            <th>ID</th>
+            <th>JobName</th>
+            <th>JobKey</th>
+            <th>CronExpression</th>
+            <th>LastExecuteUtc</th>
+            <th>NextExecuteUtc</th>
+            <th>JobStatus</th>
+            <th>Description</th>
+            <th>操作</th>
+        </tr>
+        @foreach (var item in Model.ScheduleJobList)
+        {
+            <tr>
+                <th>@item.Id</th>
+                <th>@item.JobName</th>
+                <th>@item.JobKey</th>
+                <th>@item.CronExpression <input type="button" value="修改" onclick="updateCronExpression(@item.Id);"> </th>
+                <th>@item.LastExecuteUtc.ToString("yyyy-MM-dd HH:mm:ss")</th>
+                <th>@item.NextExecuteUtc.ToString("yyyy-MM-dd HH:mm:ss")</th>
+                <th>
+                    @if (item.JobStatus == 0)
+                    {
+                        <input type="button" value="暂停中" style="background:#f00">
+                    }
+                    else
+                    {
+                        <input type="button" value="运行中" style="background:#218868">
+                    }
+                </th>
+                <th>@item.Description</th>
+                <th>
+                    @if (item.JobStatus == 0)
+                    {
+                        <input type="button" value="重启"  style="background:#218868" onclick="runJob('@item.JobKey');">
+                    }
+                    else
+                    {
+                        <input type="button" value="停止" style="background:#f00" onclick="stopJob('@item.JobKey');">
+                    }
+                </th>
+            </tr>
+        }
+    </table>
+</div>
+
+<script>
+
+    function runJob(jobKey)
+    {
+        $.ajax({
+            type: 'GET',
+            url: '/Home/ResumeJob?jobKey=' + jobKey,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                if (data.status) {
+                    alert("重启成功");
+                }
+                else {
+                    alert("重启失败");
+                }
+            }
+        });
+    }
+
+    function stopJob(jobKey)
+    {
+        $.ajax({
+            type: 'Get',
+            url: '/Home/PauseJob?jobKey=' + jobKey,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                if (data.status) {
+                    alert("暂停成功");
+                }
+                else {
+                    alert("暂停失败");
+                }
+            }
+        });
+    }
+
+    function updateCronExpression(id)
+    {
+        alert("编辑任务：" + id);
+    }
+
+
+</script>
+
